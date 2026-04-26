@@ -1,0 +1,581 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kakao i LaaS 고객지원 챗봇</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 0;
+    }
+    .container {
+      width: 420px;
+      height: 680px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .header {
+      background: #FEE500;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .header-logo {
+      width: 40px; height: 40px;
+      background: #3C1E1E;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; overflow: hidden;
+    }
+    .header-logo img { width: 85%; height: 85%; object-fit: contain; }
+    .header-info h2 { font-size: 16px; font-weight: 700; color: #3C1E1E; }
+    .header-info p { font-size: 12px; color: #555; margin-top: 2px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block; margin-right: 4px; }
+    .chat-area {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth;
+    }
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+    .msg { display: flex; gap: 8px; max-width: 88%; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot { align-self: flex-start; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #FEE500;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; margin-top: 2px; overflow: hidden;
+    }
+    .avatar img { width: 85%; height: 85%; object-fit: contain; }
+    .bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.6; word-break: break-word; }
+    .msg.bot .bubble { background: #f4f4f4; color: #222; border-top-left-radius: 4px; }
+    .msg.user .bubble { background: #FEE500; color: #3C1E1E; border-top-right-radius: 4px; }
+    .msg-time { font-size: 10px; color: #aaa; margin-top: 4px; }
+    .typing { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+    .typing span { width: 7px; height: 7px; background: #bbb; border-radius: 50%; animation: bounce 1.2s infinite; }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+    .quick-btns { padding: 0 14px 10px; display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
+    .quick-btn {
+      font-size: 12px; padding: 5px 10px;
+      border: 1px solid #FEE500; border-radius: 20px;
+      background: #fff; color: #3C1E1E; cursor: pointer; transition: background 0.15s;
+    }
+    .quick-btn:hover { background: #FEE500; }
+    .input-area { border-top: 1px solid #eee; padding: 12px 14px; display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0; }
+    .input-area textarea {
+      flex: 1; border: 1px solid #ddd; border-radius: 12px; padding: 10px 14px;
+      font-size: 14px; font-family: inherit; resize: none;
+      max-height: 100px; min-height: 42px; outline: none; transition: border 0.2s;
+    }
+    .input-area textarea:focus { border-color: #FEE500; }
+    .send-btn {
+      width: 42px; height: 42px; border-radius: 50%; background: #FEE500;
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+    }
+    .send-btn:hover { background: #f5d800; transform: scale(1.05); }
+    .send-btn:disabled { background: #eee; cursor: not-allowed; transform: none; }
+    .error-msg {
+      font-size: 12px; color: #e53935; background: #fff3f3;
+      padding: 8px 12px; border-radius: 8px; border: 1px solid #ffcdd2; line-height: 1.6;
+    }
+    .system-select-btns {
+      display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;
+    }
+    .system-select-btn {
+      flex: 1; min-width: 80px; padding: 10px 8px;
+      border: 2px solid #FEE500; border-radius: 12px;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 700;
+      color: #3C1E1E; text-align: center; line-height: 1.5; transition: all 0.15s;
+    }
+    .system-select-btn:hover { background: #FEE500; transform: translateY(-2px); }
+    .system-select-btn span { font-size: 11px; font-weight: 400; color: #666; display: block; }
+    .selected-badge {
+      display: inline-block; margin-top: 8px;
+      font-size: 12px; color: #4caf50; font-weight: 600;
+    }
+    .input-area textarea:disabled { background: #f9f9f9; color: #aaa; cursor: not-allowed; }
+    .send-btn:disabled { background: #eee; cursor: not-allowed; transform: none; }
+    .channel-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; background: #3C1E1E; color: #FEE500;
+      font-size: 13px; font-weight: 600; text-decoration: none;
+      flex-shrink: 0; transition: background 0.15s;
+    }
+    .channel-bar:hover { background: #2a1515; }
+    .channel-bar-icon { font-size: 16px; }
+    .channel-bar-arrow { margin-left: auto; font-size: 16px; opacity: 0.7; }
+    .channel-bottom-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px; background: #FEE500; color: #3C1E1E;
+      font-size: 13px; font-weight: 700; text-decoration: none;
+      border-top: 1px solid #e8d000; flex-shrink: 0; transition: background 0.15s;
+    }
+    .channel-bottom-btn:hover { background: #f5d800; }
+    .footer-credit {
+      text-align: center; font-size: 11px; color: #aaa;
+      margin-top: 10px; letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-logo"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>
+    <div class="header-info">
+      <h2>Kakao i LaaS &#xC9C0;&#xC6D0;&#xC13C;&#xD130;</h2>
+      <p><span class="status-dot"></span>AI &#xC5B4;&#xC2DC;&#xC2A4;&#xD134;&#xD2B8; &middot; Gemini 2.5</p>
+    </div>
+  </div>
+
+  <a class="channel-bar" href="http://pf.kakao.com/_dxgJxgs/chat" target="_blank">
+    <span class="channel-bar-icon">💬</span>
+    <span>카카오 채널 상담하기</span>
+    <span class="channel-bar-arrow">›</span>
+  </a>
+
+  <div class="chat-area" id="chatArea"></div>
+
+  <div class="quick-btns" id="quickBtns"></div>
+
+  <div class="input-area">
+    <textarea id="userInput" placeholder="서비스를 먼저 선택해 주세요." rows="1" disabled
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>&#x27A4;</button>
+  </div>
+
+  <a class="channel-bottom-btn" href="http://pf.kakao.com/_dxgJxgs/chat" target="_blank">
+    💬 채널톡 상담하기
+  </a>
+</div>
+
+<div class="footer-credit">만든사람 : leo.c</div>
+
+<script>
+  const API_KEY = 'AIzaSyCRMWhoMWxM96C8px6MvZNhThq56811hHc';
+  const MODEL = 'gemini-2.5-flash';
+  const SHEET_ID = '1i4LAqtTyjL1KjJVNrqXsJDqyKNLzxTI5xb9KFtlWZ-Q';
+
+  const BASE_PROMPT = `당신은 Kakao i LaaS 고객지원 전문 AI 어시스턴트입니다.
+Kakao i LaaS는 화주와 회원사를 연결하여 물류 비즈니스의 효율성을 높이는 AI 기반 B2B 서비스형 소프트웨어 플랫폼입니다.
+다음 공식 가이드 내용을 바탕으로 친절하고 명확하게 한국어로 답변하세요.
+
+## 사용자 구분
+- 화주사: 창고를 이용하는 기업 (창고+OM 서비스 이용)
+- 회원사(LSP): 자체 창고를 보유하며 화주에게 공간을 제공하는 기업 (창고 소유, OM/WM 이용)
+- 한 계정이 화주사+회원사 복수 회원타입 보유 가능
+
+## 주요 서비스
+- 창고 매칭: 화주-회원사 간 창고 연결
+- OM(Order Management): 주문 관리 시스템
+- WM(Warehouse Management): 창고 관리 시스템
+
+## 가입 절차 (7단계)
+1. 우측 상단 사람 아이콘 > 회원가입
+2. 대표자 이메일 입력 및 본인인증 (사업자별 조직은 한 개만 만들 수 있고, 대표 관리자가 신청)
+3. 회원타입 선택: 화주사 또는 회원사 (복수 가능)
+4. 회사 정보 입력 (사업자등록번호: '-' 없이 숫자 10자리, 오기입 시 승인 반려 가능)
+5. 조직 ID 설정 (영문 소문자+숫자, 3~30자, 전 직원 공용 로그인용)
+6. 대표관리자 정보 입력 (이름, 휴대폰 번호[선택], 비밀번호, 약관동의)
+7. 승인 대기: KEP 담당자가 3~7 영업일 내 검토 후 이메일 통지
+
+## 로그인
+- 창고 매칭: kakaoilaas.com 접속 후 상단 메뉴 이용
+- OM/WM: 홈 화면 My LaaS 버튼 클릭
+- 직접 접속: om.kakaoilaas.com / wm.kakaoilaas.com / wm.kakaoilaas.com/pda/
+- OM/WM 진입 시 휴대폰 기반 2차 인증 필요 (OM↔WM 간 전환 시 추가 2차 인증 불필요)
+- OM+WM 권한 모두 보유시 OM으로 자동 연결, WM 권한만 있으면 WM으로 연결
+- 조직 ID 분실: 조직 ID 찾기 버튼에서 이름+이메일 입력 후 인증번호 확인
+- 모듈 권한 없는 경우 해당 모듈 입장 제한됨
+
+## 멤버 및 권한 설정 (OM/WM 사용 설정)
+- 접근: 매칭 홈화면 > 사람 아이콘 > 계정 관리 > 좌측 메뉴 > 멤버 및 권한
+- 사용자 그룹 권한: 화주/회원사 모두 설정 가능 (멤버 소속 그룹 지정)
+- 물류센터 권한: 회원사만 설정 가능 (복수 창고 멤버별 접근 권한 관리)
+- 최대 100명 동시 변경 가능 (체크박스로 선택 후 [권한 설정] 버튼)
+- 주의: 회원타입 변경 시 기존 권한 초기화, 재설정 필요
+
+## 창고 찾기 (화주)
+5가지 검색 방식:
+1. 조건검색: 상품유형, 사용기간, 선호지역 선택
+2. 연관키워드 검색: 검색바 돋보기 버튼 > 연관키워드 탭에서 키워드 클릭
+3. 통합검색: 창고명 또는 회원사명으로 직접 검색
+4. 지도에서 찾기: 위치 기반
+5. 인기창고: 매칭 가장 많은 창고 참고 (상품유형·지역별 필터 가능)
+
+창고파인더 8단계 필터: 상품유형 > 사용기간 > 선호지역 > 배송서비스 > 회원사 > 면적 > 제공서비스 > 운영요일
+지원 상품유형: 의류, 화장품/잡화, 레저/건강, 디지털/가전, 육아/아동, 생활/인테리어, 냉장, 냉동, 상온식품, 의약품, 기타
+
+## 스마트 견적 요청 (화주)
+- 비교 견적 요청: 창고찾기 > 스마트견적요청 (다양한 창고 견적 비교)
+  필수 5가지: 상품유형, 배송유형, 선호지역, 예상물량(입고/보관/출고 단위별), 계약기간(6/12/24개월 또는 별도협의)
+- 직접 견적 요청: 특정 창고 카드 또는 상세 화면에서 [스마트 견적 요청] 버튼
+  필수 4가지: 상품유형, 배송유형, 예상물량, 계약기간 (지역 자동 입력)
+- 배송유형: 택배, 새벽(다음날 이른 시간), 시간대, 즉시, 일반(대형 화물), 당일
+
+## 스마트 견적 관리 (회원사)
+- Deal 3단계: 제안 > 진행(최대 3회 단가 조정) > 종료(승인/거절/취소/30일 만료)
+- 자동 거절 케이스: 창고 제공기간 만료, 계약 정보 오류, 물량 부족
+- 알림톡: 전화번호 기반 발송, 채팅방 상단 [알림톡 차단]으로 수신 차단 가능
+- 이전 단가 재요청: [견적 Deal 요청 단가로 불러오기] > [선택한 단가 반영]
+
+## 창고 등록 (회원사)
+- 통신판매업신고증 등록 완료 후 진행
+- 접근: 창고 관리 > 창고 등록
+- 등록 3단계: 기본 정보 > 상세 정보 > 사진 등록 (단계별 필수 정보 입력 후 다음 단계 진행)
+- 기본 정보: 창고 기본정보(주소 중복 불가), 창고 정보(준공시기·연면적), 계약 정보, 창고 유형(온도대, 중복 가능)
+- 창고 유형별 10개 필수 항목: 운영정보, 상품유형, 배송서비스, 제공서비스, 면적, 물량(CAPA), 입고비, 보관비, 출고비, 부자재
+- 상세 정보(선택): 부대시설, 창고 특장점(대표 1개+장점 최대 3개), 화재보험/인증/보안시설
+- 사진: 대표이미지 필수(최대 1장, 고화질), 상세이미지 선택(.png/.jpg, 최대 5MB)
+- 임시저장 가능, 복구: 창고관리 > 내창고관리 > 임시보관함
+
+## 상품 등록 (OM - 화주)
+- 개별 등록: 출고상품 > 출고상품개별등록
+  필수: 상품명, 스타일코드(중복불가), 상품유형(본품/사은품), 카테고리
+  크기: 가로/세로/높이/중량, 박스입수량, 팔레트입수량
+  추가사항: 합포장 가능 여부, 보관 온도대, 소비기한 관리 기준
+  옵션: 최대 3개 옵션, 옵션값 최대 20개
+- 일괄 등록: 출고상품일괄등록 - Excel 양식 다운로드 후 업로드
+- 세트상품: 출고상품 > 세트출고상품등록 (2종류 이상 연계)
+- 조회/수정: 출고상품 조회/수정 메뉴에서 등록일/수정일 기준 검색, 재고 없는 상품만 사용중지 처리 가능
+
+## 쇼핑몰 연동 (OM - 화주)
+지원 9개 플랫폼: 네이버 스마트스토어, 카카오톡 쇼핑하기/선물하기, 11번가, 롯데온, 위메프, Hmall, 티몬, 무신사
+- 연동 시 판매자 ID/PW 및 API 인증키 필요 (플랫폼별 상이)
+- 카카오커머스: LaaS OM을 연동대행사로 별도 등록 필요
+- 상품 구조: 출고상품(SKU) > 판매상품(가격·할인 포함) > 쇼핑몰상품(플랫폼별)
+- 플랫폼별 제한사항: 카카오톡 선물하기(추가옵션 불가), 롯데ON(출고요청 상태에서만 취소 가능), Hmall(택배사·운송장 판매자센터에서 별도 처리)
+
+## B2C 주문 관리 (OM - 화주)
+- 쇼핑몰 연동 시 신규주문 자동 수집
+- 정상 주문 흐름: 주문접수 > 할당 > 출고요청 > 배송준비중 > 출고작업중 > 배송중 > 배송완료
+- 할당 모드: 자동(가용재고 기반) 또는 수동([할당] 버튼 직접 클릭)
+- 출고 지시 자동화 ON/OFF 설정 가능
+- 결품 처리: 배송 지연(발송 가능일+사유 입력) 또는 주문 취소
+- 취소/반품/교환: 주문 상세에서 처리, 진행상태 '접수'일 때만 승인 버튼 활성화
+- 선출고: 교환 입고 도착 전 교환상품 먼저 발송 (승인~반품완료 상태에서만 가능)
+- 메모 기능: 화주 직원 간 주문 특이사항 공유 (회원사에는 공유 안됨)
+- 엑셀 다운로드: 최근 3개월 주문만 가능 (개인정보 보호)
+
+## WM 입고 처리 (회원사)
+- 입고 프로세스: 입고 예정 조회 > 입고 확정 > 적치 작업
+- 입고 확정: 팔레트/박스/낱개 수량 입력 시 자동 환산 후 [확정] 버튼
+- 적치: 적치 전략 또는 상품별 적치셀 조건에 따라 목적지 셀 자동 배정
+- PDA 입고 확정: 입고번호/상품바코드 조회 후 수량 입력
+- PDA 적치: 상품바코드 스캔 후 셀바코드 스캔으로 확정
+- 교환/반품 입고: 반품 운송장 번호 또는 원주문번호 입력, 상품바코드 스캔으로 검수
+- 과입고/이슈 발생 시: 입고 예정 메뉴 [이슈추가] 에서 이슈 유형+메모 등록 후 OM 전송
+- 입고 마감: 수동(마감 버튼) 또는 자동(익일 0시 자동 처리)
+
+## 꿀팁
+- 자동 로그인: Chrome 비밀번호 저장 기능 활용
+- 초대 멤버 권한 없음: ① 창고 미등록 시 창고 등록 후 재로그인 ② 매칭 > 계정관리 > 멤버 및 권한에서 권한 확인·수정
+- 보안 오류 ("잘못된 경로로 접근"): https://kakaoilaas.com 으로 접속 (http 아닌 https)
+- xlsx 업로드 오류: Windows 레지스트리에서 HKEY_CLASSES_ROOT의 .xlsx 값 수정 또는 Excel을 기본 프로그램으로 설정
+- WM 디폴트 화주: 더보기 > 설정하기 > 화주 설정 > 기본설정으로 저장
+- OM 상품 등록 참조: 기존 상품을 출고상품 조회/수정 화면에서 다운로드하여 참조
+- 홍보배너 문의: laas_cs@kakaoenterprise.com (1:1 비율, 최소 1080x1080px, JPG/PNG, 검수 1~3영업일)
+
+## 주요 용어 (OM)
+- SKU/출고상품: 재고 관리 최소 단위
+- 가용재고: 안전재고를 차감한 고객 판매 가능 정상 수량
+- 안전재고: 교환/반품 대응용 보관 수량
+- 스타일코드: 대표 상품 부여 번호 (중복 등록 불가)
+- 세트상품: 2종류 이상의 출고상품 연계 구조
+- 사은품: 비용 없이 제공하는 출고상품
+- 선출고: 교환 입고 도착 전 교환대상 상품 먼저 발송
+- 부진재고: 입고 1달 경과 후 최근 7일간 미판매 상품
+- 불량재고: 고객 출고 불가 상태의 상품
+- 합포장: 2종류 이상의 출고상품을 한 박스로 포장
+- CrossDock: 입고 직후 분류하여 즉시 출고, 보관 최소화
+- 주문 마감 시간: 당일 출고 가능한 최종 주문 접수 시간
+- 웨이브: 출고 작업 차수, 다중 주문 그룹화
+- 박스입수량: 박스 한 개에 들어가는 낱개 상품 개수
+- 팔레트입수량: 한 팔레트에 적재되는 박스 개수
+- 유통가능일: 배송 및 소비 기간을 고려한 출고 기한
+- 공급처: 화주가 출고상품을 공급받는 업체 (입고예정정보 등록 시 필수)
+
+## 주요 용어 (WM)
+- 로케이션: 물류센터 보관 공간 최소 단위 (앵글/팔레트 구분)
+- 앵글: 선반 형태 보관 공간 (대형/중형/소형)
+- 팔레트: 풀 팔레트(1.5m 이상)/하프 팔레트(0.7m 이하)
+- 셀: 로케이션의 하위 보관 단위
+- 존: 상위 보관 단위
+- 랙: 재고 보관용 철골/선반 구조물
+- 웨이브: 출고 작업 차수, 여러 주문 그룹화
+- 피킹: 주문 수량만큼 상품 꺼내기
+- 패킹: 포장 단위에 맞춰 상품 포장
+- 적치: 제품을 정해진 로케이션에 보관
+- 로트: 재고 관리 기준 단위 (속성 및 번호 부여)
+- 가용수량: 재고에서 예약·보류 수량을 차감한 수량
+- 과입고: 예정 물량보다 많은 실물 도착
+- 누락재고: 전산보다 실물재고가 많은 경우
+- 보충작업: 지속적 피킹을 위한 재고 보충
+- 할당: 특정 출고 건에 특정 재고 배치
+- WMS: Warehouse Management System (창고 관리 시스템)
+
+모르는 내용은 고객센터(laas_cs@kakaoenterprise.com)에 문의하도록 안내하세요.
+답변은 간결하고 핵심만, 필요시 목록 형식으로 정리하세요.`;
+
+  let SYSTEM_PROMPT = BASE_PROMPT;
+  let messages = [];
+  let isLoading = false;
+  let selectedSystem = null;
+
+  const SYSTEM_NAMES = {
+    OM: 'OM (주문 관리)',
+    WM: 'WM (창고 관리)',
+    matching: '창고 매칭'
+  };
+
+  const QUICK_BUTTONS = {
+    OM: [
+      ['📦 상품 등록', '상품 등록 방법을 알려주세요'],
+      ['🛒 쇼핑몰 연동', '쇼핑몰 연동 방법을 알려주세요'],
+      ['📋 주문 관리', '주문 확인 및 처리 방법을 알려주세요'],
+      ['🔄 반품/교환', '반품과 교환 처리 방법을 알려주세요'],
+    ],
+    WM: [
+      ['📥 입고 처리', '입고 처리 방법을 알려주세요'],
+      ['📊 재고 관리', '재고 관리 방법을 알려주세요'],
+      ['⚡ 피킹/패킹', '피킹과 패킹 방법을 알려주세요'],
+      ['📱 PDA 사용법', 'PDA를 이용한 작업 방법을 알려주세요'],
+    ],
+    matching: [
+      ['🔍 창고 찾기', '창고를 찾는 방법을 알려주세요'],
+      ['💰 스마트 견적', '스마트 견적 요청 방법을 알려주세요'],
+      ['📝 가입 방법', '가입 절차를 알려주세요'],
+      ['🔑 로그인 방법', '로그인 방법을 알려주세요'],
+    ],
+  };
+
+  function now() {
+    return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function showInitialMessage() {
+    const chatArea = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.id = 'systemSelectMsg';
+    div.innerHTML =
+      '<div class="avatar"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>' +
+      '<div>' +
+        '<div class="bubble">' +
+          '안녕하세요! <strong>Kakao i LaaS</strong> 고객지원 AI입니다.<br/><br/>' +
+          '어떤 서비스를 이용 중이신가요?' +
+          '<div class="system-select-btns">' +
+            '<button class="system-select-btn" onclick="selectSystem(\'OM\')">🛍️ OM<span>주문 관리</span></button>' +
+            '<button class="system-select-btn" onclick="selectSystem(\'WM\')">🏘️ WM<span>창고 관리</span></button>' +
+            '<button class="system-select-btn" onclick="selectSystem(\'matching\')">📦 창고 매칭<span>화주·회원사</span></button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="msg-time">' + now() + '</div>' +
+      '</div>';
+    chatArea.appendChild(div);
+  }
+
+  function selectSystem(system) {
+    selectedSystem = system;
+    const name = SYSTEM_NAMES[system];
+
+    // 선택 버튼 → 선택 완료 배지로 교체
+    const bubble = document.querySelector('#systemSelectMsg .bubble');
+    bubble.innerHTML =
+      '안녕하세요! <strong>Kakao i LaaS</strong> 고객지원 AI입니다.<br/><br/>' +
+      '어떤 서비스를 이용 중이신가요?' +
+      '<div class="selected-badge">✅ ' + name + ' 선택됨</div>';
+
+    // 봇 응답 + 대화 컨텍스트 초기화
+    const greeting = name + ' 서비스를 선택하셨군요!\n무엇이 궁금하신가요? 아래에서 선택하거나 직접 입력해 주세요.';
+    addMessage('bot', greeting);
+    messages.push({ role: 'user', parts: [{ text: '나는 ' + name + ' 서비스를 이용 중입니다.' }] });
+    messages.push({ role: 'model', parts: [{ text: name + ' 관련 질문을 도와드리겠습니다!' }] });
+
+    // 빠른 질문 버튼 업데이트
+    const container = document.getElementById('quickBtns');
+    container.innerHTML = '';
+    (QUICK_BUTTONS[system] || []).forEach(function(item) {
+      const btn = document.createElement('button');
+      btn.className = 'quick-btn';
+      btn.textContent = item[0];
+      btn.onclick = function() { sendQuick(item[1]); };
+      container.appendChild(btn);
+    });
+
+    // 입력창 활성화
+    const input = document.getElementById('userInput');
+    input.disabled = false;
+    input.placeholder = '질문을 입력하세요... (Enter로 전송)';
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+
+  function addMessage(role, content) {
+    const chatArea = document.getElementById('chatArea');
+    const isUser = role === 'user';
+    const div = document.createElement('div');
+    div.className = 'msg ' + (isUser ? 'user' : 'bot');
+    const formatted = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '• $1')
+      .replace(/\n/g, '<br/>');
+    div.innerHTML =
+      (!isUser ? '<div class="avatar"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>' : '') +
+      '<div><div class="bubble">' + formatted + '</div><div class="msg-time">' + now() + '</div></div>' +
+      (isUser ? '<div class="avatar" style="background:#ddd">&#x1F464;</div>' : '');
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function showTyping() {
+    const chatArea = document.getElementById('chatArea');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.id = 'typingIndicator';
+    div.innerHTML = '<div class="avatar">&#x1F916;</div><div class="bubble typing"><span></span><span></span><span></span></div>';
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    addMessage('user', text);
+    messages.push({ role: 'user', parts: [{ text: text }] });
+    showTyping();
+
+    try {
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + API_KEY;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: messages,
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || 'HTTP ' + res.status);
+
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
+      const replyWithLink = reply + '\n\n💬 자세한 상담을 원하시면 하단의 **채널톡 상담하기**를 눌러주세요.';
+      removeTyping();
+      addMessage('bot', replyWithLink);
+      messages.push({ role: 'model', parts: [{ text: reply }] });
+
+    } catch (err) {
+      removeTyping();
+      messages.pop();
+      const chatArea = document.getElementById('chatArea');
+      const errDiv = document.createElement('div');
+      errDiv.className = 'msg bot';
+      errDiv.innerHTML = '<div class="avatar">&#x1F916;</div><div><div class="error-msg">오류: ' + err.message + '</div><div class="msg-time">' + now() + '</div></div>';
+      chatArea.appendChild(errDiv);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('userInput').focus();
+  }
+
+  function sendQuick(text) {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  function loadSheetUpdates() {
+    return new Promise(function(resolve) {
+      const cbName = 'sheetCb_' + Date.now();
+      const script = document.createElement('script');
+
+      window[cbName] = function(data) {
+        delete window[cbName];
+        document.head.removeChild(script);
+        try {
+          const rows = data.table.rows;
+          if (!rows || rows.length === 0) {
+            console.warn('[시트] 시트에 내용이 없습니다.');
+            return resolve('');
+          }
+          let extra = '';
+          let loaded = 0;
+          rows.forEach(function(row) {
+            const section = row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
+            const content = row.c[1] && row.c[1].v ? String(row.c[1].v).trim() : '';
+            if (section && content) {
+              extra += '\n## ' + section + '\n' + content + '\n';
+              loaded++;
+            }
+          });
+          console.log('[시트] 업데이트 ' + loaded + '개 항목 로드 완료 ✅');
+          resolve(extra);
+        } catch (e) {
+          console.warn('[시트] 데이터 파싱 실패:', e.message);
+          resolve('');
+        }
+      };
+
+      script.onerror = function() {
+        delete window[cbName];
+        console.warn('[시트] 스크립트 로드 실패 - 시트가 공개 상태인지 확인하세요.');
+        resolve('');
+      };
+
+      script.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
+        '/gviz/tq?tqx=out:json;responseHandler:' + cbName;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function init() {
+    const updates = await loadSheetUpdates();
+    if (updates.trim()) {
+      SYSTEM_PROMPT = BASE_PROMPT + '\n\n## 추가 업데이트 내용 (최신 정보 우선 적용)\n' + updates;
+    }
+    showInitialMessage();
+  }
+
+  init();
+</script>
+</body>
+</html>
