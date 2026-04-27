@@ -136,6 +136,25 @@
       background: #FFF8DC;
     }
 
+    /* ===== 새 대화 버튼 ===== */
+    .new-chat-btn {
+      margin-left: auto;
+      background: rgba(0,0,0,0.12);
+      border: none;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #3C1E1E;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .new-chat-btn:hover { background: rgba(0,0,0,0.2); }
+
     /* ===== 신규 셋업 버튼 ===== */
     .system-select-btn.setup-btn { border-color: #4CAF50; color: #2E7D32; }
     .system-select-btn.setup-btn:hover { background: #E8F5E9; transform: translateY(-2px); }
@@ -155,6 +174,7 @@
       <h2>Kakao i LaaS &#xC9C0;&#xC6D0;&#xC13C;&#xD130;</h2>
       <p><span class="status-dot"></span>AI &#xC5B4;&#xC2DC;&#xC2A4;&#xD134;&#xD2B8; &middot; Gemini 2.5</p>
     </div>
+    <button class="new-chat-btn" onclick="resetChat()">↺ 새 대화</button>
   </div>
 
   <a class="channel-bar" href="http://pf.kakao.com/_dxgJxgs/chat" target="_blank">
@@ -836,6 +856,31 @@ Kakao i LaaS는 화주와 회원사를 연결하여 물류 비즈니스의 효�
     });
 
     input.focus();
+  }
+
+  function resetChat() {
+    // 상태 초기화
+    messages = [];
+    selectedSystem = null;
+    isLoading = false;
+    isOnboarding = false;
+    onboardingType = null;
+    onboardingStepIndex = 0;
+
+    // UI 초기화
+    document.getElementById('chatArea').innerHTML = '';
+    document.getElementById('quickBtns').innerHTML = '';
+    document.getElementById('quickBtns').style.cssText = '';
+    document.querySelector('.input-area').style.display = '';
+
+    const input = document.getElementById('userInput');
+    input.value = '';
+    input.style.height = 'auto';
+    input.disabled = true;
+    input.placeholder = '서비스를 먼저 선택해 주세요.';
+    document.getElementById('sendBtn').disabled = true;
+
+    showInitialMessage();
   }
 
   // ===== 기존 채팅 함수 =====
