@@ -36,7 +36,7 @@
     }
     .header-logo {
       width: 40px; height: 40px;
-      background: #3C1E1E;
+      background: #fff;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 20px; overflow: hidden;
@@ -55,7 +55,7 @@
     .msg.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg.bot { align-self: flex-start; }
     .avatar {
-      width: 32px; height: 32px; border-radius: 50%; background: #FEE500;
+      width: 32px; height: 32px; border-radius: 50%; background: #fff;
       display: flex; align-items: center; justify-content: center;
       font-size: 16px; flex-shrink: 0; margin-top: 2px; overflow: hidden;
     }
@@ -136,7 +136,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <div class="header-logo"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>
+    <div class="header-logo"><img src="상담사프로필.png" alt="상담사" /></div>
     <div class="header-info">
       <h2>Kakao i LaaS &#xC9C0;&#xC6D0;&#xC13C;&#xD130;</h2>
       <p><span class="status-dot"></span>AI &#xC5B4;&#xC2DC;&#xC2A4;&#xD134;&#xD2B8; &middot; Gemini 2.5</p>
@@ -373,7 +373,7 @@ Kakao i LaaS는 화주와 회원사를 연결하여 물류 비즈니스의 효�
     div.className = 'msg bot';
     div.id = 'systemSelectMsg';
     div.innerHTML =
-      '<div class="avatar"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>' +
+      '<div class="avatar"><img src="상담사프로필.png" alt="상담사" /></div>' +
       '<div>' +
         '<div class="bubble">' +
           '안녕하세요! <strong>Kakao i LaaS</strong> 고객지원 AI입니다.<br/><br/>' +
@@ -435,7 +435,7 @@ Kakao i LaaS는 화주와 회원사를 연결하여 물류 비즈니스의 효�
       .replace(/^- (.+)$/gm, '• $1')
       .replace(/\n/g, '<br/>');
     div.innerHTML =
-      (!isUser ? '<div class="avatar"><img src="kakaoilaas상담사.JPG" alt="상담사" /></div>' : '') +
+      (!isUser ? '<div class="avatar"><img src="상담사프로필.png" alt="상담사" /></div>' : '') +
       '<div><div class="bubble">' + formatted + '</div><div class="msg-time">' + now() + '</div></div>' +
       (isUser ? '<div class="avatar" style="background:#ddd">&#x1F464;</div>' : '');
     chatArea.appendChild(div);
